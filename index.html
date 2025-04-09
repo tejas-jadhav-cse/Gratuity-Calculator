@@ -1,0 +1,131 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gratuity Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }body {
+  background: linear-gradient(135deg, #ece9e6, #ffffff);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.container {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  transition: transform 0.3s ease;
+}
+
+.container:hover {
+  transform: scale(1.02);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.input-group {
+  margin-bottom: 1.2rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+input[type="number"] {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  transition: border-color 0.3s;
+}
+
+input[type="number"]:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.result {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: bold;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Gratuity Calculator</h2>
+    <div class="input-group">
+      <label for="salary">Last Drawn Monthly Salary (₹)</label>
+      <input type="number" id="salary" placeholder="Enter salary" />
+    </div>
+    <div class="input-group">
+      <label for="years">Years of Service</label>
+      <input type="number" id="years" placeholder="Enter years" />
+    </div>
+    <button onclick="calculateGratuity()">Calculate Gratuity</button>
+    <div class="result" id="result"></div>
+  </div>  <script>
+    function calculateGratuity() {
+      const salary = parseFloat(document.getElementById('salary').value);
+      const years = parseFloat(document.getElementById('years').value);
+      const resultDiv = document.getElementById('result');
+
+      if (isNaN(salary) || isNaN(years) || salary <= 0 || years <= 0) {
+        resultDiv.textContent = 'Please enter valid positive numbers.';
+        return;
+      }
+
+      // Gratuity Formula: (15/26) * Last drawn salary * number of completed years of service
+      const gratuity = (15 / 26) * salary * years;
+      resultDiv.textContent = `Estimated Gratuity: ₹${gratuity.toFixed(2)}`;
+    }
+  </script></body>
+</html>
