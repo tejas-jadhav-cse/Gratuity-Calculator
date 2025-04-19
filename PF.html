@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provident Fund (PF) Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .chart-container {
+            margin-top: 20px;
+        }
+        .highlight {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .reset-btn {
+            background-color: #f44336;
+        }
+        .reset-btn:hover {
+            background-color: #e53935;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Provident Fund (PF) Calculator</h1>
+        <form id="pf-form">
+            <label for="principal">Last Year’s PF Principal Balance:</label>
+            <input type="number" id="principal" placeholder="Enter principal balance" required>
+
+            <label for="contribution">Current Monthly Contribution (Employee + Employer):</label>
+            <input type="number" id="contribution" placeholder="Enter monthly contribution" required>
+
+            <label for="interest-rate">Interest Rate (Annual %):</label>
+            <input type="number" id="interest-rate" value="8.1" step="0.1" required>
+
+            <label for="years">Number of Years to Calculate:</label>
+            <select id="years">
+                <option value="1">1 Year</option>
+                <option value="3">3 Years</option>
+                <option value="5">5 Years</option>
+                <option value="10">10 Years</option>
+                <option value="custom">Custom</option>
+            </select>
+            <input type="number" id="custom-years" placeholder="Enter custom years" style="display: none;">
+
+            <label for="goal">Desired PF Goal Amount (Optional):</label>
+            <input type="number" id="goal" placeholder="Enter goal amount">
+
+            <button type="button" id="calculate-btn">Calculate</button>
+            <button type="button" id="reset-btn" class="reset-btn">Reset</button>
+        </form>
+
+        <div id="results" style="display: none;">
+            <h2>Results</h2>
+            <p>Projected Balance: <span id="projected-balance" class="highlight"></span></p>
+            <p>Time to Reach Goal: <span id="time-to-goal" class="highlight"></span></p>
+            <p>Required Monthly Contribution: <span id="required-contribution" class="highlight"></span></p>
+
+            <h3>Year-wise Breakdown</h3>
+            <table id="breakdown-table">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Starting Balance</th>
+                        <th>Annual Contribution</th>
+                        <th>Interest Earned</th>
+                        <th>Ending Balance</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="chart-container">
+                <canvas id="growth-chart"></canvas>
+            </div>
+
+            <button id="download-csv">Download as CSV</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const form = document.getElementById('pf-form');
+        const yearsDropdown = document.getElementById('years');
+        const customYearsInput = document.getElementById('custom-years');
+        const resultsDiv = document.getElementById('results');
+        const projectedBalanceSpan = document.getElementById('projected-balance');
+        const timeToGoalSpan = document.getElementById('time-to-goal');
+        const requiredContributionSpan = document.getElementById('required-contribution');
+        const breakdownTableBody = document.querySelector('#breakdown-table tbody');
+        const growthChartCanvas = document.getElementById('growth-chart');
+        const resetBtn = document.getElementById('reset-btn');
+        const downloadCsvBtn = document.getElementById('download-csv');
+        let growthChart;
+
+        yearsDropdown.addEventListener('change', () => {
+            customYearsInput.style.display = yearsDropdown.value === 'custom' ? 'block' : 'none';
+        });
+
+        document.getElementById('calculate-btn').addEventListener('click', () => {
+            const principal = parseFloat(document.getElementById('principal').value);
+            const monthlyContribution = parseFloat(document.getElementById('contribution').value);
+            const annualInterestRate = parseFloat(document.getElementById('interest-rate').value) / 100;
+            const goal = parseFloat(document.getElementById('goal').value) || null;
+            const years = yearsDropdown.value === 'custom' ? parseInt(customYearsInput.value) : parseInt(yearsDropdown.value);
+
+            if (isNaN(principal) || isNaN(monthlyContribution) || isNaN(annualInterestRate) || isNaN(years)) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            let balance = principal;
+            const annualContribution = monthlyContribution * 12;
+            const breakdown = [];
+            let timeToGoal = null;
+            let requiredContribution = null;
+
+            for (let year = 1; year <= years; year++) {
+                const startingBalance = balance;
+                const interestEarned = balance * annualInterestRate;
+                balance += annualContribution + interestEarned;
+                breakdown.push({
+                    year,
+                    startingBalance: startingBalance.toFixed(2),
+                    annualContribution: annualContribution.toFixed(2),
+                    interestEarned: interestEarned.toFixed(2),
+                    endingBalance: balance.toFixed(2),
+                });
+
+                if (goal && !timeToGoal && balance >= goal) {
+                    timeToGoal = year;
+                }
+            }
+
+            if (goal && !timeToGoal) {
+                const monthlyRate = Math.pow(1 + annualInterestRate, 1 / 12) - 1;
+                requiredContribution = ((goal - principal * Math.pow(1 + monthlyRate, years * 12)) * monthlyRate) /
+                    (Math.pow(1 + monthlyRate, years * 12) - 1);
+            }
+
+            displayResults(balance, timeToGoal, requiredContribution, breakdown);
+        });
+
+        function displayResults(balance, timeToGoal, requiredContribution, breakdown) {
+            projectedBalanceSpan.textContent = balance.toFixed(2);
+            timeToGoalSpan.textContent = timeToGoal ? `${timeToGoal} years` : 'Not achievable within the selected period';
+            requiredContributionSpan.textContent = requiredContribution ? requiredContribution.toFixed(2) : 'N/A';
+
+            breakdownTableBody.innerHTML = '';
+            breakdown.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.year}</td>
+                    <td>${row.startingBalance}</td>
+                    <td>${row.annualContribution}</td>
+                    <td>${row.interestEarned}</td>
+                    <td>${row.endingBalance}</td>
+                `;
+                breakdownTableBody.appendChild(tr);
+            });
+
+            if (growthChart) {
+                growthChart.destroy();
+            }
+
+            const labels = breakdown.map(row => `Year ${row.year}`);
+            const data = breakdown.map(row => parseFloat(row.endingBalance));
+            growthChart = new Chart(growthChartCanvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'PF Growth',
+                        data,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                        fill: true,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                    },
+                },
+            });
+
+            resultsDiv.style.display = 'block';
+        }
+
+        resetBtn.addEventListener('click', () => {
+            form.reset();
+            customYearsInput.style.display = 'none';
+            resultsDiv.style.display = 'none';
+        });
+
+        downloadCsvBtn.addEventListener('click', () => {
+            const rows = [['Year', 'Starting Balance', 'Annual Contribution', 'Interest Earned', 'Ending Balance']];
+            breakdownTableBody.querySelectorAll('tr').forEach(tr => {
+                const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent);
+                rows.push(cells);
+            });
+
+            const csvContent = rows.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'pf_breakdown.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
